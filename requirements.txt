@@ -38,7 +38,7 @@ soundfile==0.14.0
 speechbrain==1.1.0
 sqlparse==0.5.5
 torch==2.11.0
-torchcodec==0.11.1
+torchcodec==0.14.0
 torchaudio==2.11.0
 tzdata==2026.2
 weasyprint==69.0
