@@ -1,0 +1,130 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Users</h4>
+                <p class="section-subtitle">Manage role assignment, account activation, and operational access.</p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-shell">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ user.full_name }}</div>
+                                    <div class="small text-muted">{{ user.email }}</div>
+                                </td>
+                                <td><span class="status-chip bg-secondary-subtle text-secondary">{{ user.get_role_display }}</span></td>
+                                <td>
+                                    <span class="status-chip {% if user.is_active %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                        {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" class="action-row justify-content-end">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_user">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        <select name="role" class="form-select form-select-sm" style="max-width: 170px;">
+                                            {% for value, label in user.Role.choices %}
+                                            <option value="{{ value }}" {% if user.role == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            {% if user.is_active %}Deactivate{% else %}Reactivate{% endif %}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4">
+                                    <div class="empty-state">
+                                        <strong>No users found</strong>
+                                        <p class="text-muted mb-0">Create an analyst, reviewer, or viewer account to populate the roster.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Invitations</h4>
+                <p class="section-subtitle">Issue time-limited onboarding links for new staff.</p>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="invite">
+                    {% if invitation_form.non_field_errors %}
+                    <div class="alert alert-danger">{{ invitation_form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="form-grid">
+                        {% for field in invitation_form %}
+                        <div class="form-field {% if field.name == 'email' %}span-2{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}{{ field.errors }}{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-card-actions">
+                        <button type="submit" class="btn btn-outline-primary">Create invitation</button>
+                    </div>
+                </form>
+
+                <hr>
+
+                {% for invitation in invitations %}
+                <div class="report-version-card mb-3">
+                    <div class="d-flex justify-content-between gap-3">
+                        <div>
+                            <div class="fw-semibold">{{ invitation.email }}</div>
+                            <div class="small text-muted">{{ invitation.get_role_display }} | {{ invitation.get_status_display }}</div>
+                            <div class="small text-muted">Expires {{ invitation.expires_at|date:"M d, Y H:i" }}</div>
+                            {% if invitation.invite_url %}
+                            <a href="{{ invitation.invite_url }}" class="small">{{ invitation.invite_url }}</a>
+                            {% endif %}
+                        </div>
+                        {% if invitation.status == 'pending' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="revoke_invitation">
+                            <input type="hidden" name="invitation_id" value="{{ invitation.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <strong>No invitations issued</strong>
+                    <p class="text-muted mb-0">Create an invitation to let a new user activate their account securely.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

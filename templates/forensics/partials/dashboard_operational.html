@@ -1,0 +1,52 @@
+<div class="card section-card h-100">
+    <div class="card-header">
+        <h4 class="section-title">Operational monitoring</h4>
+        <p class="section-subtitle">Worker health, queue pressure, and recent task failures.</p>
+    </div>
+    <div class="card-body">
+        <div class="info-list">
+            <div class="info-list__row">
+                <span class="info-list__label">Worker status</span>
+                <span class="info-list__value">
+                    <span class="status-chip {% if operational_summary.worker_status == 'online' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
+                        {{ operational_summary.worker_status|title }}
+                    </span>
+                </span>
+            </div>
+            <div class="info-list__row">
+                <span class="info-list__label">Running tasks</span>
+                <span class="info-list__value">{{ operational_summary.queue_summary.running|default:0 }}</span>
+            </div>
+            <div class="info-list__row">
+                <span class="info-list__label">Pending tasks</span>
+                <span class="info-list__value">{{ operational_summary.queue_summary.pending|default:0 }}</span>
+            </div>
+            <div class="info-list__row">
+                <span class="info-list__label">Retries</span>
+                <span class="info-list__value">{{ operational_summary.queue_summary.retrying|default:0 }}</span>
+            </div>
+            <div class="info-list__row">
+                <span class="info-list__label">Average duration</span>
+                <span class="info-list__value">{{ operational_summary.queue_summary.avg_duration|default:"Unavailable" }}</span>
+            </div>
+        </div>
+
+        {% if operational_summary.recent_failures %}
+        <hr>
+        <div class="d-grid gap-2">
+            {% for failure in operational_summary.recent_failures %}
+            <div class="timeline-entry">
+                <div class="fw-semibold">{{ failure.case.case_number }}</div>
+                <div class="small text-muted mb-2">{{ failure.stage_label }}</div>
+                <p class="mb-0">{{ failure.error_message|truncatechars:140 }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state mt-3">
+            <strong>No recent task failures</strong>
+            <p class="text-muted mb-0">Background job monitoring is clear.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>

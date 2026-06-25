@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!example.env
+*.pem
+*.key
+*.crt
+
+# Django/runtime output
+db.sqlite3
+media/
+private_media/
+staticroot/
+.ci-staticroot/
+.runtime/
+celerybeat-schedule
+*.log
+
+# Local model assets and generated/source vendor workspaces
+model_assets/
+HTML/
+old/
+
+# Local forensic samples/evidence. Keep documentation, not raw recordings.
+samples/**/*.wav
+samples/**/*.mp3
+samples/**/*.flac
+samples/**/*.m4a
+samples/**/*.ogg
+samples/**/*.txt
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

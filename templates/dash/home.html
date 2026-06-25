@@ -1,0 +1,207 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="action-row">
+    <a href="{% url 'phonetic_analysis' %}" class="btn btn-primary">New phonetic case</a>
+    <a href="{% url 'linguistic_analysis' %}" class="btn btn-outline-primary">New linguistic case</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Total cases</p>
+                <div class="kpi-value">{{ metrics.total_cases }}</div>
+                <small class="text-muted">All phonetic and linguistic matters</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Completed</p>
+                <div class="kpi-value">{{ metrics.total_completed }}</div>
+                <small class="text-muted">Reviewer-approved cases</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Active workload</p>
+                <div class="kpi-value">{{ metrics.total_pending }}</div>
+                <small class="text-muted">Queued, running, or awaiting review</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Ready reports</p>
+                <div class="kpi-value">{{ metrics.total_reports }}</div>
+                <small class="text-muted">Downloadable report versions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Phonetic cases</p>
+                <div class="kpi-value">{{ metrics.total_phonetic }}</div>
+                <small class="text-muted">Audio-based speaker comparisons</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Linguistic cases</p>
+                <div class="kpi-value">{{ metrics.total_linguistic }}</div>
+                <small class="text-muted">Text-based authorship comparisons</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Failed jobs</p>
+                <div class="kpi-value">{{ metrics.total_failed_jobs }}</div>
+                <small class="text-muted">Jobs needing analyst follow-up</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <p class="text-muted mb-0">Adverse-condition flags</p>
+                <div class="kpi-value">{{ metrics.total_adverse_condition_cases }}</div>
+                <small class="text-muted">Cases with evidence cautions</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-12">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Latest cases</h4>
+                <p class="section-subtitle">Operational queue, review state, and report readiness at a glance.</p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-shell">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Case</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Reviewer</th>
+                                <th>Reports</th>
+                                <th>Progress</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in latest_cases %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ case.name }}</div>
+                                    <div class="small text-muted">{{ case.case_number }} | {{ case.created_at|date:"M d, Y H:i" }}</div>
+                                </td>
+                                <td>
+                                    <span class="status-chip {{ case.case_type_badge_class }}">{{ case.get_case_type_display }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="status-chip {{ case.status_badge_class }}">{{ case.get_status_display }}</span>
+                                        {% if case.adverse_condition_flag %}
+                                        <span class="status-chip bg-danger-subtle text-danger">Adverse conditions flagged</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-chip {{ case.reviewer_badge_class }}">{{ case.get_reviewer_status_display }}</span>
+                                </td>
+                                <td>{{ case.report_version_count }}</td>
+                                <td style="min-width: 170px;">
+                                    <div class="progress" role="progressbar" aria-label="Case progress" aria-valuenow="{{ case.progress_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ case.progress_percentage }}%;"></div>
+                                    </div>
+                                    <div class="progress-copy">
+                                        <span>{{ case.current_stage_label }}</span>
+                                        <span>{{ case.progress_percentage }}%</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'case_detail' case.id %}" class="btn btn-sm btn-outline-primary">Open</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <strong>No cases yet</strong>
+                                        <p class="text-muted mb-0">Create a phonetic or linguistic case to populate the operations dashboard.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-4">
+        <div id="dashboard-operational" hx-get="{% url 'dashboard_operational_partial' %}" hx-trigger="load, every 20s" hx-swap="innerHTML">
+            {% include 'forensics/partials/dashboard_operational.html' %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div id="dashboard-integrity" hx-get="{% url 'dashboard_integrity_partial' %}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+            {% include 'forensics/partials/dashboard_integrity.html' %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card section-card h-100">
+            <div class="card-header">
+                <h4 class="section-title">Adverse-condition alerts</h4>
+                <p class="section-subtitle">Evidence warnings that may affect interpretation.</p>
+            </div>
+            <div class="card-body">
+                {% for case in adverse_cases %}
+                <div class="note-card mb-3">
+                    <div class="d-flex justify-content-between gap-3">
+                        <div>
+                            <div class="fw-semibold">{{ case.case_number }}</div>
+                            <div class="text-muted small">{{ case.name }}</div>
+                        </div>
+                        <a href="{% url 'case_detail' case.id %}" class="btn btn-sm btn-outline-danger">Review</a>
+                    </div>
+                    <ul class="mb-0 mt-3 ps-3">
+                        {% for warning in case.adverse_condition_warnings %}
+                        <li>{{ warning }}</li>
+                        {% empty %}
+                        <li>Adverse condition flag is set for this case.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <strong>No active cautions</strong>
+                    <p class="text-muted mb-0">Recent cases have not raised adverse-condition warnings.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

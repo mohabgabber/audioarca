@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18.2-alpine3.22
+        env:
+          POSTGRES_DB: audioarca
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d audioarca"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8.4-alpine3.22
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key
+      DEBUG: "true"
+      APP_DOMAIN: localhost
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      CSRF_TRUSTED_ORIGINS: http://localhost,http://127.0.0.1
+      DATABASE_NAME: audioarca
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: "5432"
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      POSTGRES_DB: audioarca
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      REDIS_URL: redis://127.0.0.1:6379/0
+      CELERY_BROKER_URL: redis://127.0.0.1:6379/0
+      CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/1
+      OPENAI_MODEL: gpt-5.4-2026-03-05
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg \
+            libcairo2 \
+            libgdk-pixbuf-2.0-0 \
+            libglib2.0-0 \
+            libmagic1 \
+            libmagic-dev \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libsndfile1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run lint
+        run: python -m ruff check .
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run Django system checks
+        run: python manage.py check
+
+      - name: Run Django deploy checks
+        env:
+          DEBUG: "false"
+          APP_DOMAIN: localhost
+          ALLOWED_HOSTS: localhost
+          CSRF_TRUSTED_ORIGINS: https://localhost
+        run: python manage.py check --deploy --fail-level ERROR
+
+      - name: Collect static files
+        env:
+          STATIC_ROOT: .ci-staticroot
+        run: python manage.py collectstatic --noinput
+
+      - name: Run tests
+        run: python manage.py test dash.tests forensics.tests
+
+      - name: Validate Compose files
+        run: |
+          docker compose -f docker-compose.yml config
+          docker compose -f dev-compose.yml config

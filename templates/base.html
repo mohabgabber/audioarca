@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html
+    lang="en"
+    dir="ltr"
+    data-startbar="{% if request.user.is_authenticated %}{{ request.user.theme_preference }}{% else %}light{% endif %}"
+    data-bs-theme="{% if request.user.is_authenticated %}{{ request.user.theme_preference }}{% else %}light{% endif %}"
+>
+<head>
+    <meta charset="utf-8" />
+    <title>{% block title %}Forensic Analysis Toolkit{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta content="Forensic phonetics and forensic linguistics dashboard" name="description" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+
+    {% block page_css %}{% endblock %}
+    <link href="{% static 'dash/assets/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'dash/assets/css/icons.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'dash/assets/css/app.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'dash/assets/css/forensics.css' %}" rel="stylesheet" type="text/css" />
+</head>
+<body data-sidebar-size="collapsed">
+    {% block body %}{% endblock %}
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="{% static 'dash/assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'dash/assets/libs/simplebar/simplebar.min.js' %}"></script>
+    {% block page_js %}{% endblock %}
+    <script src="{% static 'dash/assets/js/app.js' %}"></script>
+    <script src="{% static 'dash/assets/js/theme-preference.js' %}"></script>
+</body>
+</html>

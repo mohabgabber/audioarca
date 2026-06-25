@@ -1,0 +1,140 @@
+{% extends 'dash/layouts/app.html' %}
+{% load static %}
+
+{% block title %}Phonetic Analysis{% endblock %}
+
+{% block page_actions %}
+<span class="meta-chip bg-primary-subtle text-primary">Accepted uploads: WAV, MP3</span>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">New phonetic case</h4>
+                <p class="section-subtitle">Upload the questioned and reference recordings for secure ingest and speaker comparison.</p>
+            </div>
+            <div class="card-body">
+                <form id="phonetic-case-form" method="post" enctype="multipart/form-data" action="{% url 'phonetic_analysis' %}" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="form-grid">
+                        <div class="form-field span-2">
+                            <label for="{{ form.case_name.id_for_label }}">{{ form.case_name.label }}</label>
+                            {{ form.case_name }}
+                            {% if form.case_name.errors %}{{ form.case_name.errors }}{% endif %}
+                            <p class="helper-text">{{ form.case_name.help_text }}</p>
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.case_number.id_for_label }}">{{ form.case_number.label }}</label>
+                            {{ form.case_number }}
+                            {% if form.case_number.errors %}{{ form.case_number.errors }}{% endif %}
+                            <p class="helper-text">{{ form.case_number.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.sample_a.id_for_label }}">{{ form.sample_a.label }}</label>
+                            {{ form.sample_a }}
+                            {% if form.sample_a.errors %}{{ form.sample_a.errors }}{% endif %}
+                            <p class="helper-text">{{ form.sample_a.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.sample_b.id_for_label }}">{{ form.sample_b.label }}</label>
+                            {{ form.sample_b }}
+                            {% if form.sample_b.errors %}{{ form.sample_b.errors }}{% endif %}
+                            <p class="helper-text">{{ form.sample_b.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}{{ form.description.errors }}{% endif %}
+                            <p class="helper-text">{{ form.description.help_text }}</p>
+                        </div>
+                    </div>
+
+                    <div class="note-card mt-4">
+                        <div class="fw-semibold mb-2">Upload progress</div>
+                        <div class="mb-3">
+                            <label class="form-label small">Sample A</label>
+                            <div class="progress"><div id="sample-a-progress" class="progress-bar" style="width: 0%;">0%</div></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Sample B</label>
+                            <div class="progress"><div id="sample-b-progress" class="progress-bar bg-info" style="width: 0%;">0%</div></div>
+                        </div>
+                        <div id="upload-status" class="alert alert-secondary mb-0">Waiting for submission.</div>
+                    </div>
+
+                    <div class="form-card-actions">
+                        <button type="submit" class="btn btn-primary" id="phonetic-submit-button">Create phonetic case</button>
+                        <span class="text-muted small">The case detail page will show queued or running status immediately after submit.</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Previous phonetic analyses</h4>
+                <p class="section-subtitle">Recent speaker-comparison work with review state and report availability.</p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-shell">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Case</th>
+                                <th>Status</th>
+                                <th>Language</th>
+                                <th>Reviewer</th>
+                                <th>Reports</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ case.name }}</div>
+                                    <div class="small text-muted">{{ case.case_number }} | {{ case.created_at|date:"M d, Y H:i" }}</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="status-chip {{ case.status_badge_class }}">{{ case.get_status_display }}</span>
+                                        {% if case.adverse_condition_flag %}
+                                        <span class="status-chip bg-danger-subtle text-danger">Adverse conditions flagged</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ case.detected_language|default:"Pending" }}</td>
+                                <td><span class="status-chip {{ case.reviewer_badge_class }}">{{ case.get_reviewer_status_display }}</span></td>
+                                <td>{{ case.report_version_count }}</td>
+                                <td class="text-end"><a href="{% url 'case_detail' case.id %}" class="btn btn-sm btn-outline-primary">Open</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <strong>No phonetic cases yet</strong>
+                                        <p class="text-muted mb-0">Upload paired recordings to begin the first speaker-comparison workflow.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'dash/assets/js/phonetic-upload.js' %}"></script>
+{% endblock %}

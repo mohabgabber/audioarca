@@ -1,0 +1,54 @@
+<div class="card section-card h-100">
+    <div class="card-header">
+        <h4 class="section-title">Integrity and audit</h4>
+        <p class="section-subtitle">Recent hashes, report generations, and logged evidence activity.</p>
+    </div>
+    <div class="card-body">
+        <h6 class="mb-3">Recent uploaded evidence hashes</h6>
+        <div class="d-grid gap-2">
+            {% for artifact in integrity_summary.recent_hashes %}
+            <div class="timeline-entry">
+                <div class="fw-semibold">{{ artifact.case.case_number }}</div>
+                <div class="small mono text-muted">{{ artifact.sha256 }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <strong>No evidence uploads yet</strong>
+                <p class="text-muted mb-0">Original evidence hashes will appear here after the first submission.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+        <h6 class="mb-3">Recent report generations</h6>
+        <div class="d-grid gap-2">
+            {% for version in integrity_summary.recent_reports %}
+            <div class="timeline-entry">
+                <div class="fw-semibold">{{ version.report.report_number }} v{{ version.version }}</div>
+                <div class="small text-muted">{{ version.generated_at|date:"M d, Y H:i" }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <strong>No reports generated yet</strong>
+                <p class="text-muted mb-0">Ready report versions will appear here with their generation time.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+        <h6 class="mb-3">Recent audit events</h6>
+        <div class="d-grid gap-2">
+            {% for event in integrity_summary.recent_audit_events %}
+            <div class="timeline-entry">
+                <div class="fw-semibold">{{ event.title }}</div>
+                <div class="small text-muted">{{ event.created_at|date:"M d, Y H:i" }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <strong>No audit events recorded yet</strong>
+                <p class="text-muted mb-0">Case, report, and download actions will populate this stream.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

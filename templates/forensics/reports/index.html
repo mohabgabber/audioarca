@@ -1,0 +1,64 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}Reports{% endblock %}
+
+{% block dashboard_content %}
+<div class="card section-card">
+    <div class="card-header">
+        <h4 class="section-title">Generated reports</h4>
+        <p class="section-subtitle">Versioned report history with case linkage, review state, and download actions.</p>
+    </div>
+    <div class="card-body pt-0">
+        <div class="table-shell">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Report</th>
+                        <th>Case</th>
+                        <th>Status</th>
+                        <th>Reviewer</th>
+                        <th>Generated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                        {% for version in report.versions.all %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ report.report_number }} v{{ version.version }}</div>
+                                <div class="small text-muted">{{ version.model_name|default:"Pending model metadata" }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ report.case.name }}</div>
+                                <div class="small text-muted">{{ report.case.case_number }} | {{ report.case.get_case_type_display }}</div>
+                            </td>
+                            <td><span class="status-chip {{ version.status_badge_class }}">{{ version.get_status_display }}</span></td>
+                            <td><span class="status-chip {{ report.case.reviewer_badge_class }}">{{ report.case.get_reviewer_status_display }}</span></td>
+                            <td>{{ version.generated_at|date:"M d, Y H:i" }}</td>
+                            <td class="text-end">
+                                <div class="action-row justify-content-end">
+                                    {% if version.pdf_artifact %}
+                                    <a href="{% url 'report_download' version.id %}" class="btn btn-sm btn-outline-primary">Download</a>
+                                    {% endif %}
+                                    <a href="{% url 'report_detail' report.id %}" class="btn btn-sm btn-outline-secondary">Details</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <strong>No reports generated yet</strong>
+                                <p class="text-muted mb-0">Report versions will appear here after the first analysis completes and the PDF is rendered.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

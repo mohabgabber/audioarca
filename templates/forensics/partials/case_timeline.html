@@ -1,0 +1,31 @@
+<div class="timeline-list mb-4">
+    {% for step in timeline_steps %}
+    <div class="timeline-step">
+        <span>{{ step|title|cut:"_" }}</span>
+        {% if case.current_stage == step %}
+        <span class="status-chip bg-primary-subtle text-primary">Current</span>
+        {% elif forloop.counter0 <= current_stage_index %}
+        <span class="status-chip bg-success-subtle text-success">Reached</span>
+        {% else %}
+        <span class="status-chip bg-secondary-subtle text-secondary">Pending</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="d-grid gap-2">
+    {% for event in case.events.all %}
+    <div class="timeline-entry">
+        <div class="d-flex justify-content-between gap-3">
+            <div class="fw-semibold">{{ event.title }}</div>
+            <div class="small text-muted">{{ event.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+        <p class="mb-0 mt-2">{{ event.message }}</p>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <strong>No audit entries yet</strong>
+        <p class="text-muted mb-0">Case, task, report, and download events will appear here.</p>
+    </div>
+    {% endfor %}
+</div>

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Logout | Dashboard{% endblock %}
+
+{% block body %}
+<div class="container-xxl auth-shell">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-8 col-lg-5 col-xl-4">
+            <div class="auth-card shadow-sm">
+                <div class="auth-card__header">
+                    <h4 class="mb-1 fw-semibold">Sign out</h4>
+                    <p class="text-muted mb-0">Confirm the end of your current session.</p>
+                </div>
+                <div class="auth-card__body">
+                    <form method="post" action="{% url 'account_logout' %}">
+                        {% csrf_token %}
+                        {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                        {% endif %}
+                        <div class="form-card-actions">
+                            <button type="submit" class="btn btn-danger">Sign out</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Stay signed in</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

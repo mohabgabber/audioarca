@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="topbar d-print-none">
+    <div class="container-xxl">
+        <nav class="topbar-custom d-flex justify-content-between" id="topbar-custom">
+            <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
+                <li>
+                    <button class="nav-link mobile-menu-btn nav-icon" id="togglemenu">
+                        <i class="iconoir-menu-scale"></i>
+                    </button>
+                </li>
+                <li class="mx-3 welcome-text">
+                    <h4 class="mb-0 fw-semibold text-truncate">{{ page_heading|default:"Forensic Analysis Toolkit" }}</h4>
+                    <p class="mb-0 text-muted small">{{ request.user.get_role_display }} | {{ request.user.email }}</p>
+                </li>
+            </ul>
+            <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
+                <li class="topbar-item">
+                    <a class="nav-link nav-icon" href="javascript:void(0);" id="light-dark-mode" title="Toggle Theme">
+                        <i class="icofont-sun dark-mode"></i>
+                        <i class="icofont-moon light-mode"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<div class="startbar d-print-none">
+    <div class="brand border-bottom">
+        <a href="{% url 'dashboard' %}" class="d-flex align-items-center text-decoration-none px-3 py-3">
+            <span class="brand-mark">FT</span>
+            <span class="brand-title fs-5 fw-semibold text-body">Forensic Toolkit</span>
+        </a>
+    </div>
+
+    <div class="startbar-menu">
+        <div class="startbar-collapse" id="startbarCollapse" data-simplebar>
+            <div class="d-flex align-items-start flex-column w-100">
+                <ul class="navbar-nav mb-auto w-100">
+                    <li class="menu-label pt-0 mt-0"><span>Main Menu</span></li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'dashboard' %} active{% endif %}" href="{% url 'dashboard' %}">
+                            <i class="iconoir-stats-report menu-icon"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'phonetic' %} active{% endif %}" href="{% url 'phonetic_analysis' %}">
+                            <i class="iconoir-voice-scan menu-icon"></i>
+                            <span>Phonetic Analysis</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'linguistic' %} active{% endif %}" href="{% url 'linguistic_analysis' %}">
+                            <i class="iconoir-language menu-icon"></i>
+                            <span>Linguistic Analysis</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'reports' %} active{% endif %}" href="{% url 'reports' %}">
+                            <i class="iconoir-page-star menu-icon"></i>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'users' %} active{% endif %}" href="{% url 'user_management' %}">
+                            <i class="iconoir-group menu-icon"></i>
+                            <span>User Management</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_section == 'settings' %} active{% endif %}" href="{% url 'dashboard_settings' %}">
+                            <i class="iconoir-settings menu-icon"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <form action="{% url 'account_logout' %}" method="post" class="w-100">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link border-0 bg-transparent text-start w-100">
+                                <i class="iconoir-log-out menu-icon"></i>
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="startbar-overlay d-print-none"></div>
+
+<div class="page-wrapper">
+    <div class="page-content app-shell">
+        <div class="container-xxl">
+            <div class="page-hero">
+                <div class="row align-items-start g-3">
+                    <div class="col">
+                        <h4 class="fw-semibold mb-1">{% block page_heading %}{{ page_heading|default:"Dashboard" }}{% endblock %}</h4>
+                        <p class="text-muted mb-0">{% block page_subtitle %}{{ page_subtitle|default:"" }}{% endblock %}</p>
+                        <div class="page-hero__meta">
+                            <span class="meta-chip bg-primary-subtle text-primary">{{ current_date }}</span>
+                            <span class="meta-chip bg-secondary-subtle text-secondary">{{ request.user.get_role_display }}</span>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+            <div class="row">
+                <div class="col-12">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% block dashboard_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

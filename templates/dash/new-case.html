@@ -1,0 +1,59 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}New Case | Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Create Analysis Case</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label" for="analysis_name">Analysis Name</label>
+                            <input id="analysis_name" name="analysis_name" class="form-control" type="text" placeholder="Short analysis name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="analysis_type">Type</label>
+                            <select id="analysis_type" name="analysis_type" class="form-select" required>
+                                <option value="">Select type</option>
+                                {% for value, label in analysis_type_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="analysis_description">Description</label>
+                        <textarea id="analysis_description" name="analysis_description" class="form-control" rows="5" placeholder="Describe the analysis context, evidence, and objective." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="iconoir-plus-circle me-1"></i> Create Analysis Case
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Tips</h4>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0 ps-3">
+                    <li class="mb-2">Choose exactly one type: Phonetic or Linguistic.</li>
+                    <li class="mb-2">Use a precise analysis name for easier retrieval.</li>
+                    <li>Include context about sample source and intended comparison.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

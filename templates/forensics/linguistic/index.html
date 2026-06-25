@@ -1,0 +1,118 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}Linguistic Analysis{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">New linguistic case</h4>
+                <p class="section-subtitle">Submit the questioned and known texts for stylometric comparison and report generation.</p>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="form-grid">
+                        <div class="form-field span-2">
+                            <label for="{{ form.case_name.id_for_label }}">{{ form.case_name.label }}</label>
+                            {{ form.case_name }}
+                            {% if form.case_name.errors %}{{ form.case_name.errors }}{% endif %}
+                            <p class="helper-text">{{ form.case_name.help_text }}</p>
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.case_number.id_for_label }}">{{ form.case_number.label }}</label>
+                            {{ form.case_number }}
+                            {% if form.case_number.errors %}{{ form.case_number.errors }}{% endif %}
+                            <p class="helper-text">{{ form.case_number.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}{{ form.description.errors }}{% endif %}
+                            <p class="helper-text">{{ form.description.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.suspected_sample_text.id_for_label }}">{{ form.suspected_sample_text.label }}</label>
+                            {{ form.suspected_sample_text }}
+                            {% if form.suspected_sample_text.errors %}{{ form.suspected_sample_text.errors }}{% endif %}
+                            <p class="helper-text">{{ form.suspected_sample_text.help_text }}</p>
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.provided_sample_text.id_for_label }}">{{ form.provided_sample_text.label }}</label>
+                            {{ form.provided_sample_text }}
+                            {% if form.provided_sample_text.errors %}{{ form.provided_sample_text.errors }}{% endif %}
+                            <p class="helper-text">{{ form.provided_sample_text.help_text }}</p>
+                        </div>
+                    </div>
+
+                    <div class="form-card-actions">
+                        <button type="submit" class="btn btn-primary">Create linguistic case</button>
+                        <span class="text-muted small">Each text should be long enough to support stable stylometric measurement.</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Previous linguistic analyses</h4>
+                <p class="section-subtitle">Recent authorship-comparison work, report counts, and review outcomes.</p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-shell">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Case</th>
+                                <th>Status</th>
+                                <th>Language</th>
+                                <th>Reviewer</th>
+                                <th>Reports</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ case.name }}</div>
+                                    <div class="small text-muted">{{ case.case_number }} | {{ case.created_at|date:"M d, Y H:i" }}</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="status-chip {{ case.status_badge_class }}">{{ case.get_status_display }}</span>
+                                        {% if case.adverse_condition_flag %}
+                                        <span class="status-chip bg-danger-subtle text-danger">Adverse conditions flagged</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ case.detected_language|default:"Pending" }}</td>
+                                <td><span class="status-chip {{ case.reviewer_badge_class }}">{{ case.get_reviewer_status_display }}</span></td>
+                                <td>{{ case.report_version_count }}</td>
+                                <td class="text-end"><a href="{% url 'case_detail' case.id %}" class="btn btn-sm btn-outline-primary">Open</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <strong>No linguistic cases yet</strong>
+                                        <p class="text-muted mb-0">Paste the known and questioned text samples to begin the first authorship comparison.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}{{ report.report_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="action-row">
+    {% if request.user.can_create_cases %}
+    <form method="post" action="{% url 'report_regenerate' report.case.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary">Queue new version</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'case_detail' report.case.id %}" class="btn btn-outline-secondary">Open case</a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card section-card h-100">
+            <div class="card-header">
+                <h4 class="section-title">Report summary</h4>
+                <p class="section-subtitle">Case linkage, current status, and latest version metadata.</p>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-list__row">
+                        <span class="info-list__label">Report number</span>
+                        <span class="info-list__value">{{ report.report_number }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Case</span>
+                        <span class="info-list__value">{{ report.case.case_number }} | {{ report.case.name }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Case status</span>
+                        <span class="info-list__value">
+                            <span class="status-chip {{ report.case.status_badge_class }}">{{ report.case.get_status_display }}</span>
+                        </span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Reviewer status</span>
+                        <span class="info-list__value">
+                            <span class="status-chip {{ report.case.reviewer_badge_class }}">{{ report.case.get_reviewer_status_display }}</span>
+                        </span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Latest version</span>
+                        <span class="info-list__value">{{ report.latest_version_number|default:"Pending" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Report versions</h4>
+                <p class="section-subtitle">Narrative output, evidence snapshot summary, and secure downloads by version.</p>
+            </div>
+            <div class="card-body">
+                {% for version in versions %}
+                <div class="report-version-card mb-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="fw-semibold">Version {{ version.version }}</div>
+                            <div class="small text-muted">{{ version.generated_at|date:"M d, Y H:i" }}</div>
+                            <div class="small text-muted">{{ version.model_name|default:"Pending model metadata" }}</div>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            <span class="status-chip {{ version.status_badge_class }}">{{ version.get_status_display }}</span>
+                            {% if version.pdf_artifact %}
+                            <a href="{% url 'report_download' version.id %}" class="btn btn-sm btn-outline-primary">Download PDF</a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid mt-3 mb-3">
+                        <div class="metric-tile">
+                            <div class="info-list__label">OpenAI response ID</div>
+                            <div class="info-list__value mt-2">{{ version.response_id|default:"Unavailable" }}</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="info-list__label">Evidence snapshot</div>
+                            <div class="info-list__value mt-2">
+                                {% if version.evidence_snapshot.sample_a %}
+                                Audio comparison evidence stored
+                                {% elif version.evidence_snapshot.suspected_sample %}
+                                Text comparison evidence stored
+                                {% else %}
+                                Snapshot pending
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% for section in version.narrative_sections %}
+                    <div class="narrative-section">
+                        <h5 class="mb-0">{{ section.heading }}</h5>
+                        {% if section.body %}
+                        <p>{{ section.body|linebreaksbr }}</p>
+                        {% else %}
+                        <p class="text-muted">No content recorded for this section.</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <strong>No report versions available</strong>
+                    <p class="text-muted mb-0">Generate a report from the case workspace to populate this page.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

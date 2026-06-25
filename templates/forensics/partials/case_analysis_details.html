@@ -1,0 +1,87 @@
+{% if audio_samples %}
+<div class="d-grid gap-3 mb-4">
+    {% for sample in audio_samples %}
+    <div class="note-card">
+        <div class="fw-semibold">{{ sample.get_role_display }} transcript</div>
+        <p class="mb-2 mt-2">{{ sample.transcript_text|default:"Transcript pending." }}</p>
+        <div class="small text-muted">Confidence: {{ sample.transcript_confidence|default:"Pending" }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if acoustic_feature_sets %}
+<div class="table-shell mb-4">
+    <table class="table align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Sample</th>
+                <th>F0 mean</th>
+                <th>F1 mean</th>
+                <th>F2 mean</th>
+                <th>F3 mean</th>
+                <th>Pause count</th>
+                <th>HNR</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feature_set in acoustic_feature_sets %}
+            <tr>
+                <td>{{ feature_set.sample.get_role_display }}</td>
+                <td>{{ feature_set.f0_mean|floatformat:2 }}</td>
+                <td>{{ feature_set.f1_mean|floatformat:2 }}</td>
+                <td>{{ feature_set.f2_mean|floatformat:2 }}</td>
+                <td>{{ feature_set.f3_mean|floatformat:2 }}</td>
+                <td>{{ feature_set.pause_count }}</td>
+                <td>{{ feature_set.hnr|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if linguistic_feature_sets %}
+<div class="d-grid gap-3 mb-4">
+    {% for feature_set in linguistic_feature_sets %}
+    <div class="note-card">
+        <div class="d-flex justify-content-between gap-3">
+            <div class="fw-semibold">{{ feature_set.sample.get_role_display }}</div>
+            <div class="small text-muted">Type-token ratio {{ feature_set.lexical_richness.type_token_ratio|default:"Pending" }}</div>
+        </div>
+        <div class="small text-muted mt-2">Repeated phrases: {% if feature_set.repeated_phrases %}{{ feature_set.repeated_phrases|join:", " }}{% else %}None recorded{% endif %}</div>
+        <div class="small text-muted">Sentence mean: {{ feature_set.sentence_length_stats.mean|default:"Pending" }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if analysis_result %}
+<div class="table-shell">
+    <table class="table align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Comparison metric</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for metric, value in analysis_result.comparison_metrics.items %}
+            <tr>
+                <td>{{ metric|title|cut:"_" }}</td>
+                <td>{{ value|floatformat:4 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="text-muted">No comparison metrics recorded yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <strong>No stored analysis result</strong>
+    <p class="text-muted mb-0">The structured evidence package will appear here after analysis completes.</p>
+</div>
+{% endif %}

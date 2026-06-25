@@ -1,0 +1,24 @@
+{% if case.report %}
+    {% for version in case.report.versions.all %}
+    <div class="report-version-card mb-3">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="fw-semibold">Version {{ version.version }}</div>
+                <div class="small text-muted">{{ version.generated_at|date:"M d, Y H:i" }}</div>
+                <div class="small text-muted">{{ version.model_name|default:"Pending model metadata" }}</div>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-2">
+                <span class="status-chip {{ version.status_badge_class }}">{{ version.get_status_display }}</span>
+                {% if version.pdf_artifact %}
+                <a href="{% url 'report_download' version.id %}" class="btn btn-sm btn-outline-primary">Download PDF</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <strong>No report versions yet</strong>
+    <p class="text-muted mb-0">A report will appear here after the analysis pipeline stores structured evidence and generates the first PDF.</p>
+</div>
+{% endif %}

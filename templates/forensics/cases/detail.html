@@ -1,0 +1,316 @@
+{% extends 'dash/layouts/app.html' %}
+{% load static %}
+
+{% block title %}{{ case.case_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="action-row">
+    <span class="status-chip {{ case.status_badge_class }}">{{ case.get_status_display }}</span>
+    <span class="status-chip bg-info-subtle text-info">{{ case.current_stage_label }}</span>
+    {% if request.user.can_create_cases and case.is_analyzed %}
+    <form method="post" action="{% url 'report_regenerate' case.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary">Regenerate report</button>
+    </form>
+    {% endif %}
+    {% if can_retry_case %}
+    <form method="post" action="{% url 'case_retry' case.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Retry analysis</button>
+    </form>
+    {% endif %}
+    {% if request.user.can_create_cases and case.status != 'completed' and case.status != 'cancelled' and case.status != 'failed' %}
+    <form method="post" action="{% url 'case_cancel' case.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">Cancel case</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="workspace-layout">
+    <div class="workspace-stack">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Case status and progress</h4>
+                <p class="section-subtitle">Live job state, task progress, warnings, and disclosure summary.</p>
+            </div>
+            <div class="card-body" id="case-status-panel" data-refresh-url="{% url 'case_status_partial' case.id %}" data-refresh-interval="5000" hx-get="{% url 'case_status_partial' case.id %}" hx-trigger="load, every 5s" hx-swap="innerHTML">
+                {% include 'forensics/partials/case_status.html' %}
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Evidence explorer</h4>
+                <p class="section-subtitle">Immutable originals, derived artifacts, hashes, and evidence-specific metadata.</p>
+            </div>
+            <div class="card-body">
+                {% if audio_samples %}
+                <div class="d-grid gap-3 mb-4">
+                    {% for sample in audio_samples %}
+                    <div class="evidence-card">
+                        <div class="d-flex justify-content-between gap-3">
+                            <div>
+                                <div class="fw-semibold">{{ sample.get_role_display }}</div>
+                                <div class="small text-muted">{{ sample.original_artifact.original_filename }}</div>
+                            </div>
+                            <span class="status-chip {% if sample.noise_removal_applied %}bg-danger-subtle text-danger{% else %}bg-success-subtle text-success{% endif %}">
+                                {% if sample.noise_removal_applied %}Noise removal disclosed{% else %}Original signal preserved{% endif %}
+                            </span>
+                        </div>
+                        <div class="metrics-grid mt-3">
+                            <div class="metric-tile">
+                                <div class="info-list__label">SHA-256</div>
+                                <div class="info-list__value mono mt-2">{{ sample.original_artifact.sha256 }}</div>
+                            </div>
+                            <div class="metric-tile">
+                                <div class="info-list__label">Signal summary</div>
+                                <div class="info-list__value mt-2">{{ sample.duration_seconds|default:"Pending" }} s | {{ sample.sample_rate|default:"Pending" }} Hz</div>
+                            </div>
+                            <div class="metric-tile">
+                                <div class="info-list__label">Language</div>
+                                <div class="info-list__value mt-2">{{ sample.detected_language|default:"Pending" }}</div>
+                            </div>
+                            <div class="metric-tile">
+                                <div class="info-list__label">Keywords</div>
+                                <div class="info-list__value mt-2">
+                                    {% if sample.spoken_keywords %}{{ sample.spoken_keywords|join:", " }}{% else %}Pending{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="artifact-actions mt-3">
+                            <a href="{% url 'artifact_download' sample.original_artifact.id %}" class="btn btn-sm btn-outline-secondary">Original</a>
+                            {% if sample.normalized_artifact %}<a href="{% url 'artifact_download' sample.normalized_artifact.id %}" class="btn btn-sm btn-outline-secondary">Normalized</a>{% endif %}
+                            {% if sample.cleaned_artifact %}<a href="{% url 'artifact_download' sample.cleaned_artifact.id %}" class="btn btn-sm btn-outline-secondary">Cleaned</a>{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if text_samples %}
+                <div class="d-grid gap-3">
+                    {% for sample in text_samples %}
+                    <div class="evidence-card">
+                        <div class="d-flex justify-content-between gap-3">
+                            <div>
+                                <div class="fw-semibold">{{ sample.get_role_display }}</div>
+                                <div class="small text-muted">{{ sample.detected_language|default:"Pending language" }}</div>
+                            </div>
+                            <span class="status-chip {% if sample.encoding_warnings %}bg-warning-subtle text-warning{% else %}bg-success-subtle text-success{% endif %}">
+                                {% if sample.encoding_warnings %}Encoding cautions{% else %}Clean ingest{% endif %}
+                            </span>
+                        </div>
+                        <div class="metrics-grid mt-3">
+                            <div class="metric-tile">
+                                <div class="info-list__label">SHA-256</div>
+                                <div class="info-list__value mono mt-2">{{ sample.sha256 }}</div>
+                            </div>
+                            <div class="metric-tile">
+                                <div class="info-list__label">Length</div>
+                                <div class="info-list__value mt-2">{{ sample.text_length }} chars | {{ sample.token_count }} tokens</div>
+                            </div>
+                        </div>
+                        <p class="mb-0 mt-3">{{ sample.raw_text|truncatechars:500 }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if not audio_samples and not text_samples %}
+                <div class="empty-state">
+                    <strong>No evidence material</strong>
+                    <p class="text-muted mb-0">No audio or text samples are attached to this case.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Transcript and extracted features</h4>
+                <p class="section-subtitle">Stored transcripts, measured signals, stylometric outputs, and comparison metrics.</p>
+            </div>
+            <div class="card-body" id="case-analysis-panel" data-refresh-url="{% url 'case_analysis_partial' case.id %}" data-refresh-interval="10000" hx-get="{% url 'case_analysis_partial' case.id %}" hx-trigger="load, every 10s" hx-swap="innerHTML">
+                {% include 'forensics/partials/case_analysis_details.html' %}
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Task progress and audit trail</h4>
+                <p class="section-subtitle">Pipeline stage progression and logged operational events.</p>
+            </div>
+            <div class="card-body" id="case-timeline-panel" data-refresh-url="{% url 'case_timeline_partial' case.id %}" data-refresh-interval="5000" hx-get="{% url 'case_timeline_partial' case.id %}" hx-trigger="load, every 5s" hx-swap="innerHTML">
+                {% include 'forensics/partials/case_timeline.html' %}
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-stack">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Case summary</h4>
+                <p class="section-subtitle">Core metadata, decision label, and calibration output.</p>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-list__row">
+                        <span class="info-list__label">Case number</span>
+                        <span class="info-list__value">{{ case.case_number }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Case type</span>
+                        <span class="info-list__value">{{ case.get_case_type_display }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Created by</span>
+                        <span class="info-list__value">{{ case.created_by.full_name }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Reviewer</span>
+                        <span class="info-list__value">{{ case.reviewer.full_name|default:"Unassigned" }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Decision label</span>
+                        <span class="info-list__value">{{ case.final_decision_label|default:"Pending" }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Calibrated score</span>
+                        <span class="info-list__value">{{ case.calibrated_score|default:"Pending" }}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Methodology summary</span>
+                        <span class="info-list__value">{{ analysis_result.evidence_summary|default:"Pending" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card section-card review-docket">
+            <div class="card-header">
+                <h4 class="section-title">Forensic review docket</h4>
+                <p class="section-subtitle">Reviewer notes, admissibility cautions, and final case disposition.</p>
+            </div>
+            <div class="card-body">
+                <div class="review-state-grid mb-3">
+                    <div class="metric-tile">
+                        <div class="info-list__label">Reviewer status</div>
+                        <div class="info-list__value mt-2">
+                            <span class="status-chip {{ case.reviewer_badge_class }}">{{ case.get_reviewer_status_display }}</span>
+                        </div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="info-list__label">Current reviewer</div>
+                        <div class="info-list__value mt-2">{{ case.reviewer.full_name|default:"Unassigned" }}</div>
+                    </div>
+                </div>
+
+                <div class="review-readiness mb-3">
+                    <div class="review-readiness__item {% if review_analysis_ready %}is-ready{% else %}is-blocked{% endif %}">
+                        <span>Structured analysis</span>
+                        <strong>{% if review_analysis_ready %}Complete{% else %}Required{% endif %}</strong>
+                    </div>
+                    <div class="review-readiness__item {% if review_report_ready %}is-ready{% else %}is-blocked{% endif %}">
+                        <span>Report PDF</span>
+                        <strong>{% if review_report_ready %}Ready{% else %}Required for approval{% endif %}</strong>
+                    </div>
+                    <div class="review-readiness__item {% if review_active_job %}is-blocked{% else %}is-ready{% endif %}">
+                        <span>Active job lock</span>
+                        <strong>{% if review_active_job %}{{ review_active_job.stage_label }}{% else %}Clear{% endif %}</strong>
+                    </div>
+                </div>
+
+                <div class="note-card mb-3">
+                    <div class="fw-semibold mb-2">Analyst notes</div>
+                    <p class="mb-0">{{ case.analyst_notes|default:"No analyst notes recorded." }}</p>
+                </div>
+
+                {% if request.user.can_review_cases %}
+                <form method="post" action="{% url 'case_review' case.id %}" novalidate>
+                    {% csrf_token %}
+                    <div class="form-field">
+                        <label for="{{ review_form.reviewer_notes.id_for_label }}">Reviewer notes</label>
+                        {{ review_form.reviewer_notes }}
+                        {% if review_form.reviewer_notes.errors %}{{ review_form.reviewer_notes.errors }}{% endif %}
+                    </div>
+                    <div class="review-action-grid">
+                        <button type="submit" name="decision" value="save_notes" class="btn btn-outline-secondary">Save notes</button>
+                        <button type="submit" name="decision" value="approve" class="btn btn-primary" {% if not review_can_approve %}disabled{% endif %}>Approve final record</button>
+                        <button type="submit" name="decision" value="reject" class="btn btn-outline-danger" {% if not review_can_refuse %}disabled{% endif %}>Refuse for correction</button>
+                    </div>
+                    {% if not review_can_approve %}
+                    <p class="review-lock-copy mb-0 mt-3">
+                        Approval requires completed analysis, a ready report PDF, no active job, and a case that is not already final, failed, or cancelled.
+                    </p>
+                    {% endif %}
+                </form>
+                {% else %}
+                <div class="alert alert-secondary mb-0">
+                    Sign in to enter review notes or issue final approval/refusal.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Reports</h4>
+                <p class="section-subtitle">Version history and secure PDF downloads.</p>
+            </div>
+            <div class="card-body" id="report-versions-panel" data-refresh-url="{% url 'report_versions_partial' case.id %}" data-refresh-interval="10000" hx-get="{% url 'report_versions_partial' case.id %}" hx-trigger="load, every 10s" hx-swap="innerHTML">
+                {% include 'forensics/partials/report_versions.html' %}
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Warnings and disclosures</h4>
+                <p class="section-subtitle">Adverse-condition flags, preprocessing notes, and integrity context.</p>
+            </div>
+            <div class="card-body">
+                {% if case.adverse_condition_warnings %}
+                <div class="alert alert-warning">
+                    <strong>Adverse conditions</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        {% for warning in case.adverse_condition_warnings %}
+                        <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                <div class="empty-state mb-3">
+                    <strong>No adverse-condition warnings</strong>
+                    <p class="text-muted mb-0">The evidence package does not currently record cautionary warnings.</p>
+                </div>
+                {% endif %}
+
+                <div class="info-list">
+                    <div class="info-list__row">
+                        <span class="info-list__label">Noise removal</span>
+                        <span class="info-list__value">{% if case.noise_removal_applied %}Applied and disclosed{% else %}Not applied{% endif %}</span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Preprocessing notes</span>
+                        <span class="info-list__value">
+                            {% if case.preprocessing_notes %}{{ case.preprocessing_notes|join:", " }}{% else %}No preprocessing notes recorded{% endif %}
+                        </span>
+                    </div>
+                    <div class="info-list__row">
+                        <span class="info-list__label">Model versions</span>
+                        <span class="info-list__value">
+                            {% if case.model_versions %}{{ case.model_versions }}{% else %}Pending{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'dash/assets/js/case-detail-refresh.js' %}"></script>
+{% endblock %}

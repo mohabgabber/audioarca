@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In | Dashboard{% endblock %}
+
+{% block body %}
+<div class="container-xxl auth-shell">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-8 col-lg-5 col-xl-4">
+            <div class="auth-card shadow-sm">
+                <div class="auth-card__header">
+                    <h4 class="mb-1 fw-semibold">Sign in</h4>
+                    <p class="text-muted mb-0">Access the forensic phonetics and linguistics workspace.</p>
+                </div>
+                <div class="auth-card__body">
+                    <form method="post" action="{% url 'account_login' %}" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="form-field mb-3">
+                            <label for="id_login">Email</label>
+                            <input type="email" class="form-control" id="id_login" name="login" value="{{ form.login.value|default:'' }}" autocomplete="email" required>
+                            {% if form.login.errors %}<small class="text-danger">{{ form.login.errors|striptags }}</small>{% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_password">Password</label>
+                            <input type="password" class="form-control" id="id_password" name="password" autocomplete="current-password" required>
+                            {% if form.password.errors %}<small class="text-danger">{{ form.password.errors|striptags }}</small>{% endif %}
+                        </div>
+
+                        {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                        {% endif %}
+
+                        <div class="form-card-actions">
+                            <button class="btn btn-primary w-100" type="submit">Sign in</button>
+                        </div>
+                    </form>
+
+                    <p class="text-muted small mt-3 mb-0">Need an account? Use an invitation link or <a href="{% url 'account_signup' %}">register</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

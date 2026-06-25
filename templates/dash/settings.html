@@ -1,0 +1,108 @@
+{% extends 'dash/layouts/app.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Profile</h4>
+                <p class="section-subtitle">Maintain your analyst profile, contact details, and account presentation.</p>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="{{ form.first_name.id_for_label }}">First name</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}{{ form.first_name.errors }}{% endif %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.last_name.id_for_label }}">Last name</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}{{ form.last_name.errors }}{% endif %}
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.email.id_for_label }}">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}{{ form.email.errors }}{% endif %}
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.profile_pic.id_for_label }}">Profile picture</label>
+                            {{ form.profile_pic }}
+                            {% if form.profile_pic.errors %}{{ form.profile_pic.errors }}{% endif %}
+                        </div>
+                        <div class="form-field span-2">
+                            <label for="{{ form.description.id_for_label }}">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}{{ form.description.errors }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="form-card-actions">
+                        <button type="submit" class="btn btn-primary">Save profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card section-card mb-4">
+            <div class="card-header">
+                <h4 class="section-title">Theme preference</h4>
+                <p class="section-subtitle">The light or dark theme is stored on your account and follows you across sessions.</p>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-list__row">
+                        <span class="info-list__label">Current theme</span>
+                        <span class="info-list__value">
+                            <span class="status-chip bg-info-subtle text-info">{{ request.user.theme_preference|title }}</span>
+                        </span>
+                    </div>
+                </div>
+                <p class="text-muted mb-0 mt-3">Use the sun/moon toggle in the top bar. The preference is persisted through the backend API and re-applied on future visits.</p>
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="card-header">
+                <h4 class="section-title">Password</h4>
+                <p class="section-subtitle">Update your credentials without leaving the dashboard.</p>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="password">
+                    {% if password_form.non_field_errors %}
+                    <div class="alert alert-danger">{{ password_form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="form-field mb-3">
+                        <label for="{{ password_form.old_password.id_for_label }}">Current password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}{{ password_form.old_password.errors }}{% endif %}
+                    </div>
+                    <div class="form-field mb-3">
+                        <label for="{{ password_form.new_password1.id_for_label }}">New password</label>
+                        {{ password_form.new_password1 }}
+                        {% if password_form.new_password1.errors %}{{ password_form.new_password1.errors }}{% endif %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ password_form.new_password2.id_for_label }}">Confirm new password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}{{ password_form.new_password2.errors }}{% endif %}
+                    </div>
+                    <div class="form-card-actions">
+                        <button type="submit" class="btn btn-outline-primary">Update password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

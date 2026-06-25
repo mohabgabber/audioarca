@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ report.report_number }} v{{ report_version.version }}</title>
+    <style>
+        @page {
+            margin: 1.2cm 1.5cm 1.6cm;
+        }
+
+        body {
+            color: #162432;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        h1, h2, h3, h4 {
+            color: #0f3554;
+            margin: 0 0 0.35cm;
+        }
+
+        h1 {
+            font-size: 22pt;
+            letter-spacing: 0.02em;
+        }
+
+        h2 {
+            border-bottom: 1px solid #d7e2ea;
+            font-size: 14pt;
+            padding-bottom: 0.12cm;
+        }
+
+        h3 {
+            font-size: 11pt;
+            margin-top: 0.2cm;
+        }
+
+        h4 {
+            font-size: 10pt;
+            margin-top: 0.16cm;
+        }
+
+        p, ul, ol {
+            margin: 0 0 0.35cm;
+        }
+
+        code {
+            background: #eef4f8;
+            border-radius: 0.08cm;
+            color: #0f3554;
+            font-family: "Courier New", monospace;
+            font-size: 9.5pt;
+            padding: 0.02cm 0.08cm;
+            word-break: break-all;
+        }
+
+        ul, ol {
+            padding-left: 0.6cm;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 0.25cm 0 0.45cm;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #cfd8df;
+            padding: 0.18cm 0.2cm;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eef4f8;
+            color: #0f3554;
+            font-size: 9.5pt;
+            text-transform: uppercase;
+        }
+
+        .cover {
+            border: 1px solid #d3dee8;
+            border-radius: 0.3cm;
+            margin-bottom: 0.9cm;
+            padding: 0.75cm;
+        }
+
+        .cover-grid {
+            display: table;
+            width: 100%;
+        }
+
+        .cover-grid__main,
+        .cover-grid__meta {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        .cover-grid__meta {
+            text-align: right;
+            width: 30%;
+        }
+
+        .muted {
+            color: #637487;
+        }
+
+        .chip {
+            background: #e7f0f7;
+            border-radius: 999px;
+            color: #0f3554;
+            display: inline-block;
+            font-size: 9pt;
+            font-weight: 700;
+            margin-top: 0.2cm;
+            padding: 0.08cm 0.3cm;
+        }
+
+        .section {
+            margin-bottom: 0.7cm;
+            page-break-inside: avoid;
+        }
+
+        .note {
+            background: #f6f8fa;
+            border-left: 4px solid #8799aa;
+            padding: 0.25cm 0.3cm;
+        }
+
+        .mono {
+            font-family: "Courier New", monospace;
+            font-size: 9pt;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <div class="cover-grid">
+            <div class="cover-grid__main">
+                <h1>Forensic Analysis Report</h1>
+                <p class="muted">{{ report.report_number }} | Version {{ report_version.version }}</p>
+                <p><strong>Case:</strong> {{ case.case_number }} | {{ case.name }}</p>
+                <p><strong>Case type:</strong> {{ case.get_case_type_display }}</p>
+                <p><strong>Analyst:</strong> {{ case.created_by.full_name }}</p>
+                <p><strong>Reviewer status:</strong> {{ case.get_reviewer_status_display }}</p>
+                <span class="chip">{{ case.final_decision_label|default:"Conclusion pending" }}</span>
+            </div>
+            <div class="cover-grid__meta">
+                <p><strong>Generated</strong><br>{{ generated_at|date:"M d, Y H:i" }}</p>
+                <p><strong>Report status</strong><br>{{ report_status_label }}</p>
+                <p><strong>Model</strong><br>{{ report_model_name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Case Summary</h2>
+        <table>
+            <tr><th>Case number</th><td>{{ case.case_number }}</td></tr>
+            <tr><th>Case status</th><td>{{ case_status_label }}</td></tr>
+            <tr><th>Reviewer status</th><td>{{ case.get_reviewer_status_display }}</td></tr>
+            <tr><th>Calibrated score</th><td>{{ case.calibrated_score|default:"Pending" }}</td></tr>
+        </table>
+        <p>{{ case.description|default:"No analyst summary supplied." }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Evidence Inventory</h2>
+        <table>
+            {% if evidence.sample_a %}
+            <tr><th>Sample A hash</th><td class="mono">{{ evidence.sample_a.sha256 }}</td></tr>
+            <tr><th>Sample B hash</th><td class="mono">{{ evidence.sample_b.sha256 }}</td></tr>
+            <tr><th>Sample A language</th><td>{{ evidence.sample_a.language|default:"Pending" }}</td></tr>
+            <tr><th>Sample B language</th><td>{{ evidence.sample_b.language|default:"Pending" }}</td></tr>
+            {% endif %}
+            {% if evidence.suspected_sample %}
+            <tr><th>Suspected text hash</th><td class="mono">{{ evidence.suspected_sample.sha256 }}</td></tr>
+            <tr><th>Provided text hash</th><td class="mono">{{ evidence.provided_sample.sha256 }}</td></tr>
+            <tr><th>Suspected language</th><td>{{ evidence.suspected_sample.language|default:"Pending" }}</td></tr>
+            <tr><th>Provided language</th><td>{{ evidence.provided_sample.language|default:"Pending" }}</td></tr>
+            {% endif %}
+        </table>
+        <div class="note">
+            Original evidence is stored immutably. Derived artifacts remain linked to their source material through recorded hashes and processing lineage.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Preprocessing and Disclosures</h2>
+        <p><strong>Preprocessing notes:</strong> {% if case.preprocessing_notes %}{{ case.preprocessing_notes|join:", " }}{% else %}None recorded{% endif %}</p>
+        <p><strong>Noise removal:</strong> {% if case.noise_removal_applied %}Applied and explicitly disclosed in this report.{% else %}Not applied.{% endif %}</p>
+        {% if evidence.warnings %}
+        <ul>
+            {% for warning in evidence.warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No adverse-condition warnings were stored in the evidence snapshot.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <h2>Comparative Findings</h2>
+        {% if evidence.sample_a %}
+        <table>
+            <tr>
+                <th>Measure</th>
+                <th>Sample A</th>
+                <th>Sample B</th>
+            </tr>
+            <tr><td>Transcript</td><td>{{ evidence.sample_a.transcript|default:"Pending" }}</td><td>{{ evidence.sample_b.transcript|default:"Pending" }}</td></tr>
+            <tr><td>F0 mean</td><td>{{ evidence.sample_a.metrics.f0_mean }}</td><td>{{ evidence.sample_b.metrics.f0_mean }}</td></tr>
+            <tr><td>F1 mean</td><td>{{ evidence.sample_a.metrics.f1_mean }}</td><td>{{ evidence.sample_b.metrics.f1_mean }}</td></tr>
+            <tr><td>F2 mean</td><td>{{ evidence.sample_a.metrics.f2_mean }}</td><td>{{ evidence.sample_b.metrics.f2_mean }}</td></tr>
+            <tr><td>F3 mean</td><td>{{ evidence.sample_a.metrics.f3_mean }}</td><td>{{ evidence.sample_b.metrics.f3_mean }}</td></tr>
+            <tr><td>Duration</td><td>{{ evidence.sample_a.metrics.duration_seconds }}</td><td>{{ evidence.sample_b.metrics.duration_seconds }}</td></tr>
+        </table>
+        <table>
+            <tr><th>Cross-sample metric</th><th>Value</th></tr>
+            <tr><td>Embedding similarity</td><td>{{ evidence.embedding_similarity }}</td></tr>
+            <tr><td>Pitch similarity</td><td>{{ evidence.pitch_similarity }}</td></tr>
+            <tr><td>Formant similarity</td><td>{{ evidence.formant_similarity }}</td></tr>
+            <tr><td>Rhythm similarity</td><td>{{ evidence.rhythm_similarity }}</td></tr>
+            <tr><td>Lexical overlap</td><td>{{ evidence.lexical_overlap }}</td></tr>
+        </table>
+        {% elif evidence.suspected_sample %}
+        <table>
+            <tr>
+                <th>Measure</th>
+                <th>Suspected sample</th>
+                <th>Provided sample</th>
+            </tr>
+            <tr><td>Text length</td><td>{{ evidence.suspected_sample.text_length }}</td><td>{{ evidence.provided_sample.text_length }}</td></tr>
+            <tr><td>Token count</td><td>{{ evidence.suspected_sample.token_count }}</td><td>{{ evidence.provided_sample.token_count }}</td></tr>
+            <tr><td>Shared markers</td><td colspan="2">{{ evidence.shared_markers|join:", "|default:"None recorded" }}</td></tr>
+            <tr><td>Divergent markers</td><td colspan="2">{{ evidence.divergent_markers|join:", "|default:"None recorded" }}</td></tr>
+        </table>
+        <table>
+            <tr><th>Cross-sample metric</th><th>Value</th></tr>
+            <tr><td>Character n-gram similarity</td><td>{{ evidence.char_similarity }}</td></tr>
+            <tr><td>Word n-gram similarity</td><td>{{ evidence.word_similarity }}</td></tr>
+            <tr><td>Function-word similarity</td><td>{{ evidence.function_word_similarity }}</td></tr>
+            <tr><td>Punctuation similarity</td><td>{{ evidence.punctuation_similarity }}</td></tr>
+            <tr><td>Sentence-structure similarity</td><td>{{ evidence.sentence_similarity }}</td></tr>
+            <tr><td>Lexical similarity</td><td>{{ evidence.lexical_similarity }}</td></tr>
+            <tr><td>Topic similarity</td><td>{{ evidence.topic_similarity }}</td></tr>
+        </table>
+        {% endif %}
+    </div>
+
+    {% for section in report_sections %}
+    <div class="section">
+        <h2>{{ section.heading }}</h2>
+        {{ section.html|safe }}
+    </div>
+    {% endfor %}
+
+    <div class="section">
+        <h2>Appendix: Stored Comparison Metrics</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            {% for metric, value in case.analysis_result.comparison_metrics.items %}
+            <tr><td>{{ metric }}</td><td>{{ value }}</td></tr>
+            {% endfor %}
+            {% for metric, value in case.analysis_result.calibration_metadata.parameters.items %}
+            <tr><td>Calibration {{ metric }}</td><td>{{ value }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>

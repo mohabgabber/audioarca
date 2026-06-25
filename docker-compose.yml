@@ -1,0 +1,207 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./deploy.sh", "web", "prod", "8000"]
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-forensics}
+      DATABASE_USER: ${DATABASE_USER:-forensics}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-replace-me}
+      POSTGRES_DB: ${POSTGRES_DB:-forensics}
+      POSTGRES_USER: ${POSTGRES_USER:-forensics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MEDIA_ROOT: /app/media
+      STATIC_ROOT: /app/staticroot
+      PRIVATE_MEDIA_ROOT: /app/private_media
+      FORENSICS_MODEL_ROOT: /app/model_assets
+      CELERY_BEAT_SCHEDULE_FILENAME: /tmp/celerybeat-schedule
+      USE_S3_STORAGE: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/signin/ >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - media_data:/app/media
+      - private_media:/app/private_media
+      - model_assets:/app/model_assets
+    networks:
+      - internal-net
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./deploy.sh", "worker", "prod", "8000"]
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-forensics}
+      DATABASE_USER: ${DATABASE_USER:-forensics}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-replace-me}
+      POSTGRES_DB: ${POSTGRES_DB:-forensics}
+      POSTGRES_USER: ${POSTGRES_USER:-forensics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      PRIVATE_MEDIA_ROOT: /app/private_media
+      FORENSICS_MODEL_ROOT: /app/model_assets
+      CELERY_BEAT_SCHEDULE_FILENAME: /tmp/celerybeat-schedule
+      USE_S3_STORAGE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/media
+      - private_media:/app/private_media
+      - model_assets:/app/model_assets
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - internal-net
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./deploy.sh", "beat", "prod", "5556"]
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-forensics}
+      DATABASE_USER: ${DATABASE_USER:-forensics}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-replace-me}
+      POSTGRES_DB: ${POSTGRES_DB:-forensics}
+      POSTGRES_USER: ${POSTGRES_USER:-forensics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      PRIVATE_MEDIA_ROOT: /app/private_media
+      FORENSICS_MODEL_ROOT: /app/model_assets
+      CELERY_BEAT_SCHEDULE_FILENAME: /tmp/celerybeat-schedule
+      USE_S3_STORAGE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/media
+      - private_media:/app/private_media
+      - model_assets:/app/model_assets
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat-schedule || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal-net
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - ops
+    command: ["./deploy.sh", "flower", "prod", "5555"]
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-forensics}
+      DATABASE_USER: ${DATABASE_USER:-forensics}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-replace-me}
+      POSTGRES_DB: ${POSTGRES_DB:-forensics}
+      POSTGRES_USER: ${POSTGRES_USER:-forensics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      FORENSICS_MODEL_ROOT: /app/model_assets
+      USE_S3_STORAGE: "false"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "5555:5555"
+    volumes:
+      - model_assets:/app/model_assets
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5555/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal-net
+
+  postgres:
+    image: postgres:18.2-alpine3.22
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      POSTGRES_USER: ${POSTGRES_USER:-forensics}
+      POSTGRES_DB: ${POSTGRES_DB:-forensics}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forensics} -d ${POSTGRES_DB:-forensics}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal-net
+
+  redis:
+    image: redis:8.4-alpine3.22
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal-net
+
+volumes:
+  media_data:
+  private_media:
+  model_assets:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal-net:
