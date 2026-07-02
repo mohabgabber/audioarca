@@ -37,7 +37,7 @@ jobs:
 
       - name: Log in to Docker Hub
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
